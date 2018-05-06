@@ -102,5 +102,5 @@ ENV/
 
 #specific
 tmp/
-backuo/
+backup/
 .vscode/
