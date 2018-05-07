@@ -1,5 +1,7 @@
 # Todo list
 
-* Command for un-taring in tmp (if package content is evolving)
-* Add nsz and desc to package
+* Add to package :
+  * nsz
+  * desc
+  * racemaps
 * Allow more configuration
