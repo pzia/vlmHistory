@@ -11,3 +11,5 @@ Fetch for each race in listeRaces.txt :
 * Tracks for each boat
 
 Files are saved in a tar.gz file.
+
+See code and TODO file for more.
