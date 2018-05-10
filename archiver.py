@@ -2,6 +2,10 @@
 #-*- coding:utf-8 -*-
 
 import archiveLib
+import sys
 
 if __name__ == "__main__":
-    archiveLib.archiveRaces() #func=archiveLib.updateRace)
+    if len(sys.argv) > 1 and sys.argv[1] == "update" :
+        archiveLib.archiveRaces(func=archiveLib.updateRace)
+    else :
+        archiveLib.archiveRaces()

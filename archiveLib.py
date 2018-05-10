@@ -70,26 +70,26 @@ def archiveRace(idr) :
         logging.info("Creating %s for %s", root, idr)
         os.mkdir(root)
 
-    diskresult = DISKRACERESULTS.format(idr=idr) #file path for results
-
-    if not os.path.exists(diskresult):
-        logging.info("Fetching results for %s", idr)
-        result = session.get(VLMRACERESULTS.format(idr = idr)) #fetch race results
-        with open(diskresult, 'w') as f:
-            json.dump(result.json(), f, ensure_ascii=False)
+    if not fetch_idr(session, idr, VLMRACERESULTS, DISKRACERESULTS):
+        return False
 
     errors = []
-    with open(diskresult, 'r') as f:
+    with open(DISKRACERESULTS.format(idr=idr), 'r') as f:
         results = json.load(f)
         with concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENTTHREADS) as executor:
-            future_to_url = {} #Keeping corresponding idu for logging          
+            future_to_url = {} #Keeping corresponding idu for logging
+            future_to_url[executor.submit(fetch_idr, session, idr, VLMRACEDESC, DISKRACEDESC)] = "desc"
+            future_to_url[executor.submit(fetch_idr, session, idr, VLMRACEEXCLUSIONS, DISKRACEEXCLUSIONS)] = "exclusions"
+            future_to_url[executor.submit(fetch_png, session, VLMRACEMAP.format(idr=idr), DISKRACEMAP.format(idr=idr))] = "racemap"
+          
             for u in results['results'] : #feed the pool
-                future = executor.submit(fetch_idr_idu_boattracks, session, idr, u)
+                future = executor.submit(fetch_idr_idu, session, idr, u, VLMBOATTRACKS, DISKBOATTRACKS)
                 future_to_url[future] = u
             for future in concurrent.futures.as_completed(future_to_url):
                 u = future_to_url[future]
                 try:
                     if not future.result() : #Return is False, not a success
+                        logging.error("fetching %s in %s not successful", u, idr)
                         errors.append(u)
                 except Exception as exc:
                     #Exception, not a success at all
@@ -108,16 +108,6 @@ def archiveRace(idr) :
         shutil.rmtree(DISKPREFIX.format(idr=idr), ignore_errors=True)
         return True
 
-def fetch_idr_idu_boattracks(session, idr, idu) :
-    """Fetch tracks for idu in idr"""
-    disktracks = DISKBOATTRACKS.format(idr=idr, idu=idu)
-    if not os.path.exists(disktracks) :
-        logging.info("Fetching tracks for %s in %s", idu, idr)
-        result = session.get(VLMBOATTRACKS.format(idr = idr, idu=idu))
-        with open(disktracks, 'w') as f:
-            json.dump(result.json(), f, ensure_ascii=False)
-    return True
-
 def fetch_idr_idu(session, idr, idu, url_pattern, disk_pattern):
     return fetch_json(session, url_pattern.format(idr=idr, idu=idu), disk_pattern.format(idr=idr, idu=idu))
 
@@ -131,10 +121,23 @@ def fetch_json(session, url, file):
         logging.info("Fetching %s from %s", file, url)
         result = session.get(url)
         d = result.json()
-        if not d['success'] :
-            return False
+        #FIXME : raceinfo/desc is not compliant
+        # if not d['success'] :
+        #    return False
         with open(file, 'w') as f:
             json.dump(d, f, ensure_ascii=False)
+    return True
+
+def fetch_png(session, url, file):
+    """Fetch file and save to disk"""
+    if not os.path.exists(file):
+        logging.info("Fetching %s from %s", file, url)
+        r = session.get(url)
+        with open(file, 'wb') as f:
+            if r.headers['Content-Type'].split('/')[1] == "png" :
+                f.write(r.content)
+            else :
+                f.write(b"")
     return True
 
 def archiveRaces(fname = "listeRaces.txt", func=archiveRace):
