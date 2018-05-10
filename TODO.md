@@ -1,4 +1,17 @@
 # Todo list
 
-* Allow more configuration
+## Todo here
+
+* Allow more config options
 * Add reals ?
+* update by reading tar content and not by un-taring
+* Add fetching racelist by ws (see VLM)
+* Check "success" in ws (see VLM)
+* No zero size png files (see VLM)
+
+## Todo in VLM
+
+* add ws for fetching all races (or race_to_be_archived)
+* clean-up jpg/png mess in racemaps
+* explicit status of racemap or not ?
+* 'success' field in raceinfo/desc
