@@ -51,18 +51,22 @@ def updateRace(idr):
         t.close()
     return archiveRace(idr)
 
-def archiveRace(idr) :
-    """Archive a whole race description and tracks"""
-    if idr_archived(idr): #already done ?
-        logging.info("%s is already archived", idr)
-        return True
-
+def makeSession():
     #Prepare session
     session = requests.session() #new session
     session.auth = config.VLMAUTH #permanent auth to session
     adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
     session.mount('https://', adapter) #configure the pool
     session.headers.update({'Connection':'Keep-Alive'}) #keep alive the connections
+    return(session)
+
+def archiveRace(idr) :
+    """Archive a whole race description and tracks"""
+    if idr_archived(idr): #already done ?
+        logging.info("%s is already archived", idr)
+        return True
+
+    session = makeSession()
 
     root = DISKPREFIX.format(idr=idr) #tmp root for files
 
@@ -140,7 +144,7 @@ def fetch_png(session, url, file):
                 f.write(b"")
     return True
 
-def archiveRaces(fname = "listeRaces.txt", func=archiveRace):
+def iterRaces(fname = "listeRaces.txt", func=archiveRace):
     with open(fname, 'r') as f:
         with concurrent.futures.ProcessPoolExecutor(max_workers=CONCURRENTPROCESSES) as executor:
             for idr in f.readlines():
